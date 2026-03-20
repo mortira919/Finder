@@ -1,0 +1,8 @@
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.3.2
+python-dotenv==1.0.1
+colorama==0.4.6
+tqdm==4.66.2
+openpyxl==3.1.2
+fake-useragent==1.4.0
