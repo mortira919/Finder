@@ -16,10 +16,12 @@ from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from database import init_db, save_search, get_history, get_filepath_by_job
 
 load_dotenv()
 
 app = FastAPI(title="WorkWork Lead Finder")
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -142,13 +144,22 @@ def run_search(job_id: str, city: str, country: str, categories: list, api_key: 
         job["leads"] = leads_data
 
         filepath = generate_report(companies, country=country)
+        no_site = sum(1 for c in companies if not c.get("website"))
+
         job["status"] = "done"
         job["progress"] = 100
         job["file"] = filepath
         job["hot_count"] = len(hot)
         job["total_count"] = len(companies)
-        job["no_site_count"] = sum(1 for c in companies if not c.get("website"))
+        job["no_site_count"] = no_site
         job["message"] = f"Готово! Найдено {len(hot)} горячих лидов."
+
+        # Сохраняем в историю
+        save_search(
+            job_id=job_id, city=city, country=country, categories=categories,
+            hot_count=len(hot), total_count=len(companies),
+            no_site_count=no_site, filepath=filepath
+        )
 
     except Exception as e:
         job["status"] = "error"
@@ -207,12 +218,25 @@ async def get_status(job_id: str):
     return job
 
 
+@app.get("/api/history")
+async def history():
+    return get_history()
+
+
 @app.get("/api/download/{job_id}")
 async def download(job_id: str):
+    # Сначала ищем в памяти (текущая сессия)
     job = jobs.get(job_id)
-    if not job or not job.get("file"):
-        return {"error": "File not found"}
-    filepath = job["file"]
+    filepath = job["file"] if job and job.get("file") else None
+
+    # Если нет в памяти — смотрим в БД (перезапуск сервера)
+    if not filepath:
+        filepath = get_filepath_by_job(job_id)
+
+    if not filepath or not os.path.exists(filepath):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "Файл не найден. Возможно, он был удалён."}, status_code=404)
+
     filename = os.path.basename(filepath)
     return FileResponse(
         filepath,

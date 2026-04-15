@@ -590,6 +590,137 @@
     letter-spacing: 1px;
   }
 
+  /* ── HISTORY ── */
+  .history-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    padding: 12px 0 4px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .history-toggle:hover { color: var(--gold); }
+  .history-toggle .ht-arrow { transition: transform 0.25s; }
+  .history-toggle.open .ht-arrow { transform: rotate(180deg); }
+
+  #historyPanel {
+    display: none;
+    margin-bottom: 24px;
+    animation: fadeIn 0.3s ease;
+  }
+  #historyPanel.open { display: block; }
+
+  .history-empty {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    padding: 24px 0;
+    opacity: 0.5;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+  .history-item:last-child { border-bottom: none; }
+
+  .history-city {
+    flex: 1;
+    min-width: 0;
+  }
+  .history-city-name {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .history-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+
+  .history-stats {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .hstat {
+    text-align: center;
+  }
+  .hstat-num {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 18px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+  }
+  .hstat-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .history-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .h-btn {
+    padding: 5px 12px;
+    border-radius: 2px;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: all 0.2s;
+    display: block;
+    text-transform: uppercase;
+  }
+  .h-btn-dl {
+    background: rgba(139,26,26,0.2);
+    border: 1px solid rgba(139,26,26,0.4);
+    color: #ff9999;
+  }
+  .h-btn-dl:hover { border-color: #cc3333; color: #ffcccc; }
+  .h-btn-dl.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .h-btn-repeat {
+    background: rgba(201,168,76,0.05);
+    border: 1px solid rgba(201,168,76,0.2);
+    color: var(--text-dim);
+  }
+  .h-btn-repeat:hover { border-color: var(--gold); color: var(--gold); }
+
+  @media (max-width: 540px) {
+    .history-stats { display: none; }
+  }
+
   /* ── LEADS LIST ── */
   .leads-header {
     display: flex;
@@ -944,6 +1075,15 @@
     </button>
   </div>
 
+  <!-- ИСТОРИЯ -->
+  <button class="history-toggle" id="historyToggle" onclick="toggleHistory()">
+    <span class="ht-arrow">▾</span> История поисков
+  </button>
+  <div class="panel" id="historyPanel">
+    <div class="panel-title">📜 История поисков</div>
+    <div id="historyList"><div class="history-empty">Загрузка...</div></div>
+  </div>
+
   <!-- ПРОГРЕСС -->
   <div class="panel progress-panel" id="progressPanel">
     <div class="panel-title">⏳ Ход операции</div>
@@ -1094,6 +1234,7 @@
       document.getElementById('progressMsg').innerHTML = '✦ ' + job.message;
       showResults(job, jobId);
       document.getElementById('searchBtn').disabled = false;
+      loadHistory(); // обновить историю
     } else if (job.status === 'error') {
       clearInterval(pollInterval);
       document.getElementById('progressMsg').innerHTML = '';
@@ -1183,6 +1324,79 @@
     const section = btn.nextElementSibling;
     section.classList.toggle('open');
   }
+
+  // ── HISTORY ──
+  async function loadHistory() {
+    try {
+      const r = await fetch('/api/history');
+      const items = await r.json();
+      renderHistory(items);
+    } catch(_) {
+      document.getElementById('historyList').innerHTML =
+        '<div class="history-empty">Не удалось загрузить историю</div>';
+    }
+  }
+
+  function renderHistory(items) {
+    const el = document.getElementById('historyList');
+    if (!items.length) {
+      el.innerHTML = '<div class="history-empty">Поисков пока не было</div>';
+      return;
+    }
+    el.innerHTML = items.map(item => {
+      const flag = item.country === 'KZ' ? '🇰🇿' : '🇷🇺';
+      const cats = Array.isArray(item.categories)
+        ? item.categories.slice(0, 3).join(', ') + (item.categories.length > 3 ? '...' : '')
+        : '';
+      const dlClass = item.file_exists ? '' : ' disabled';
+      const dlTitle = item.file_exists ? '' : 'title="Файл удалён"';
+      return `
+        <div class="history-item">
+          <div class="history-city">
+            <div class="history-city-name">${flag} ${item.city}</div>
+            <div class="history-meta">${item.timestamp} · ${cats}</div>
+          </div>
+          <div class="history-stats">
+            <div class="hstat">
+              <span class="hstat-num">${item.total_count}</span>
+              <span class="hstat-label">Компаний</span>
+            </div>
+            <div class="hstat">
+              <span class="hstat-num">${item.hot_count}</span>
+              <span class="hstat-label">Горячих</span>
+            </div>
+          </div>
+          <div class="history-actions">
+            <a class="h-btn h-btn-dl${dlClass}" ${dlTitle}
+               href="/api/download/${item.job_id}" download>Скачать</a>
+            <button class="h-btn h-btn-repeat"
+              onclick="repeatSearch('${item.city}','${item.country}',${JSON.stringify(item.categories)})">
+              Повторить
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleHistory() {
+    const btn = document.getElementById('historyToggle');
+    const panel = document.getElementById('historyPanel');
+    btn.classList.toggle('open');
+    panel.classList.toggle('open');
+  }
+
+  function repeatSearch(city, country, categories) {
+    document.getElementById('city').value = city;
+    setCountry(country);
+    selectedCats = new Set(categories);
+    document.querySelectorAll('.cat-tag').forEach(tag => {
+      tag.classList.toggle('selected', selectedCats.has(tag.textContent));
+    });
+    // Скролл к форме
+    document.getElementById('formPanel').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  loadHistory();
 
   function copyEmail(btn, text) {
     navigator.clipboard.writeText(text).then(() => {
