@@ -50,23 +50,35 @@ def run_search(job_id: str, city: str, country: str, categories: list, api_key: 
         from analyzer import analyze_website
         from reporter import generate_report
 
-        # Шаг 1
+        # Шаг 1 — поиск по категориям с реальным прогрессом
         job["status"] = "searching"
         job["message"] = f"Ищем компании в {city}..."
-        job["progress"] = 5
+        job["progress"] = 3
 
-        companies = find_companies(categories)
+        total_cats = len(categories)
+
+        def search_progress(done, total, message):
+            # 3% → 18% равномерно по категориям
+            job["progress"] = 3 + int(done / total * 15)
+            job["message"] = message
+
+        companies = find_companies(categories, on_progress=search_progress)
         job["total"] = len(companies)
-        job["message"] = f"Найдено {len(companies)} компаний. Анализируем сайты..."
-        job["progress"] = 20
+        job["message"] = f"Найдено {len(companies)} компаний. Начинаем анализ сайтов..."
+        job["progress"] = 18
 
-        # Шаг 2
+        # Шаг 2 — анализ сайтов с реальным прогрессом
         job["status"] = "analyzing"
+        total_companies = len(companies)
         for i, company in enumerate(companies):
-            if company.get("website"):
-                company["site_analysis"] = analyze_website(company["website"])
-                time.sleep(0.1)
+            name = company.get("name", "...")
+            website = company.get("website", "")
+
+            if website:
+                job["message"] = f"Анализируем сайт: {name} ({i+1}/{total_companies})"
+                company["site_analysis"] = analyze_website(website)
             else:
+                job["message"] = f"Нет сайта: {name} ({i+1}/{total_companies})"
                 company["site_analysis"] = analyze_website("")
 
             company["app_check"] = {
@@ -76,9 +88,8 @@ def run_search(job_id: str, city: str, country: str, categories: list, api_key: 
                 "ios_link": "", "android_link": ""
             }
 
-            progress = 20 + int((i + 1) / len(companies) * 70)
-            job["progress"] = progress
-            job["message"] = f"Анализируем сайты... {i+1}/{len(companies)}"
+            # 18% → 93% равномерно по компаниям
+            job["progress"] = 18 + int((i + 1) / total_companies * 75)
 
         # Шаг 3
         job["status"] = "generating"

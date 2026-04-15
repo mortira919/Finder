@@ -889,7 +889,7 @@
     });
 
     const { job_id } = await resp.json();
-    pollInterval = setInterval(() => pollStatus(job_id), 1500);
+    pollInterval = setInterval(() => pollStatus(job_id), 600);
   }
 
   async function pollStatus(jobId) {

@@ -79,10 +79,10 @@ def get_place_details(place_id: str) -> Dict:
         return {}
 
 
-def find_companies(categories: List[str]) -> List[Dict]:
+def find_companies(categories: List[str], on_progress=None) -> List[Dict]:
     """
     Основная функция поиска.
-    Возвращает список компаний с базовой информацией.
+    on_progress(current, total, message) — вызывается после каждой категории.
     """
     if not GOOGLE_MAPS_API_KEY or GOOGLE_MAPS_API_KEY == "your_google_maps_api_key_here":
         print(f"{Fore.RED}[!] GOOGLE_MAPS_API_KEY не задан в .env файле{Style.RESET_ALL}")
@@ -91,8 +91,12 @@ def find_companies(categories: List[str]) -> List[Dict]:
 
     all_companies = []
     seen_ids = set()
+    total_cats = len(categories)
 
-    for category in categories:
+    for cat_idx, category in enumerate(categories):
+        if on_progress:
+            on_progress(cat_idx, total_cats, f"Ищем «{category}»... ({cat_idx + 1}/{total_cats})")
+
         places = search_places(category, SEARCH_CITY)
         print(f"{Fore.GREEN}  Найдено мест: {len(places)}{Style.RESET_ALL}")
 
@@ -103,7 +107,7 @@ def find_companies(categories: List[str]) -> List[Dict]:
             seen_ids.add(place_id)
 
             details = get_place_details(place_id)
-            time.sleep(0.1)  # Чтобы не превысить лимиты API
+            time.sleep(0.1)
 
             company = {
                 "name": details.get("name", place.get("name", "")),
@@ -116,6 +120,9 @@ def find_companies(categories: List[str]) -> List[Dict]:
                 "place_id": place_id,
             }
             all_companies.append(company)
+
+        if on_progress:
+            on_progress(cat_idx + 1, total_cats, f"«{category}» — найдено {len(places)} мест ({cat_idx + 1}/{total_cats})")
 
     print(f"\n{Fore.GREEN}Итого уникальных компаний найдено: {len(all_companies)}{Style.RESET_ALL}")
     return all_companies
