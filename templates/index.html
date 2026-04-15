@@ -538,87 +538,6 @@
     background: rgba(139,26,26,0.1);
   }
 
-  /* ── API KEY TOGGLE ── */
-  .api-key-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-  .api-key-row input { flex: 1; }
-  .eye-btn {
-    padding: 12px;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(201,168,76,0.25);
-    border-radius: 2px;
-    color: var(--text-dim);
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-  .eye-btn:hover { border-color: var(--gold); color: var(--gold); }
-
-  /* ── API KEY HINT ── */
-  .api-hint-link {
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--gold-dark);
-    text-decoration: none;
-    cursor: pointer;
-    transition: color 0.2s;
-    margin-top: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .api-hint-link:hover { color: var(--gold); }
-
-  .api-instructions {
-    display: none;
-    margin-top: 12px;
-    padding: 16px 20px;
-    background: rgba(0,0,0,0.35);
-    border: 1px solid rgba(201,168,76,0.15);
-    border-radius: 2px;
-    animation: fadeIn 0.3s ease;
-  }
-  .api-instructions.open { display: block; }
-
-  .api-instructions ol {
-    padding-left: 20px;
-    counter-reset: steps;
-    list-style: none;
-  }
-  .api-instructions ol li {
-    counter-increment: steps;
-    position: relative;
-    font-size: 12px;
-    color: var(--text-dim);
-    line-height: 1.7;
-    padding-left: 8px;
-    margin-bottom: 4px;
-  }
-  .api-instructions ol li::before {
-    content: counter(steps) ".";
-    color: var(--gold-dark);
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    position: absolute;
-    left: -16px;
-  }
-  .api-instructions ol li a {
-    color: var(--gold);
-    text-decoration: none;
-  }
-  .api-instructions ol li a:hover { text-decoration: underline; }
-  .api-instructions .note {
-    margin-top: 10px;
-    font-size: 11px;
-    color: rgba(201,168,76,0.5);
-    font-family: 'Cinzel', serif;
-    letter-spacing: 1px;
-  }
 
   /* ── HISTORY ── */
   .history-toggle {
@@ -1136,28 +1055,6 @@
       </div>
     </div>
 
-    <div class="form-group" style="margin-bottom:20px">
-      <label>Google Maps API Key</label>
-      <div class="api-key-row">
-        <input type="password" id="apiKey" placeholder="AIza...">
-        <button class="eye-btn" onclick="toggleApiKey()">👁</button>
-      </div>
-      <span class="api-hint-link" onclick="toggleApiInstructions()">
-        ✦ Как получить ключ?
-      </span>
-      <div class="api-instructions" id="apiInstructions">
-        <ol>
-          <li>Открой <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> — войди под своим Google аккаунтом</li>
-          <li>Создай новый проект (или выбери существующий) в верхнем меню</li>
-          <li>Перейди в <strong style="color:var(--text)">APIs &amp; Services → Library</strong></li>
-          <li>Найди и включи <strong style="color:var(--text)">Places API</strong> (нажми Enable)</li>
-          <li>Перейди в <strong style="color:var(--text)">APIs &amp; Services → Credentials</strong></li>
-          <li>Нажми <strong style="color:var(--text)">Create Credentials → API Key</strong> — скопируй ключ</li>
-          <li>Добавь биллинг: <strong style="color:var(--text)">Billing → Link billing account</strong> (карта нужна, первые $200 бесплатно — ~5000 поисков)</li>
-        </ol>
-        <div class="note">⚠ Без биллинга API вернёт ошибку OR_BACR2_44</div>
-      </div>
-    </div>
 
     <div class="form-group">
       <label>Категории бизнесов</label>
@@ -1287,30 +1184,17 @@
     grid.appendChild(tag);
   });
 
-  // Load saved API key
-  const savedKey = localStorage.getItem('apiKey');
-  if (savedKey) document.getElementById('apiKey').value = savedKey;
-
   function setCountry(c) {
     country = c;
     document.getElementById('btnKZ').classList.toggle('active', c === 'KZ');
     document.getElementById('btnRU').classList.toggle('active', c === 'RU');
   }
 
-  function toggleApiKey() {
-    const inp = document.getElementById('apiKey');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
-  }
-
   async function startSearch() {
     const city = document.getElementById('city').value.trim();
-    const apiKey = document.getElementById('apiKey').value.trim();
 
     if (!city) { alert('Введите город'); return; }
-    if (!apiKey) { alert('Введите API ключ'); return; }
     if (selectedCats.size === 0) { alert('Выберите хотя бы одну категорию'); return; }
-
-    localStorage.setItem('apiKey', apiKey);
 
     document.getElementById('searchBtn').disabled = true;
     document.getElementById('progressPanel').classList.add('visible');
@@ -1323,7 +1207,6 @@
       body: JSON.stringify({
         city, country,
         categories: [...selectedCats],
-        api_key: apiKey
       })
     });
 

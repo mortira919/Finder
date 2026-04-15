@@ -201,7 +201,7 @@ async def start_search(request: Request):
             data.get("country", "KZ"),
             data.get("categories", ["ресторан", "салон красоты", "стоматология",
                                     "фитнес клуб", "автосервис", "отель", "аптека"]),
-            data.get("api_key", os.getenv("GOOGLE_MAPS_API_KEY", "")),
+            os.getenv("GOOGLE_MAPS_API_KEY", ""),
         ),
         daemon=True
     )
