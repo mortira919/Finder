@@ -527,9 +527,163 @@
     flex-shrink: 0;
   }
   .eye-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── API KEY HINT ── */
+  .api-hint-link {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--gold-dark);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .api-hint-link:hover { color: var(--gold); }
+
+  .api-instructions {
+    display: none;
+    margin-top: 12px;
+    padding: 16px 20px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 2px;
+    animation: fadeIn 0.3s ease;
+  }
+  .api-instructions.open { display: block; }
+
+  .api-instructions ol {
+    padding-left: 20px;
+    counter-reset: steps;
+    list-style: none;
+  }
+  .api-instructions ol li {
+    counter-increment: steps;
+    position: relative;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    padding-left: 8px;
+    margin-bottom: 4px;
+  }
+  .api-instructions ol li::before {
+    content: counter(steps) ".";
+    color: var(--gold-dark);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    position: absolute;
+    left: -16px;
+  }
+  .api-instructions ol li a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+  .api-instructions ol li a:hover { text-decoration: underline; }
+  .api-instructions .note {
+    margin-top: 10px;
+    font-size: 11px;
+    color: rgba(201,168,76,0.5);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+  }
+
+  /* ── WAKE-UP SPLASH ── */
+  #wakeupOverlay {
+    position: fixed;
+    inset: 0;
+    background: var(--marble);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    transition: opacity 0.8s ease;
+  }
+  #wakeupOverlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .wakeup-eagle {
+    font-size: 56px;
+    animation: floatEagle 3s ease-in-out infinite;
+    filter: sepia(1) saturate(3) hue-rotate(5deg);
+  }
+
+  .wakeup-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(18px, 4vw, 30px);
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 4px;
+  }
+
+  .wakeup-status {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    min-height: 20px;
+  }
+
+  .wakeup-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--gold-dark);
+    border-radius: 50%;
+    margin: 0 3px;
+    animation: dotPulse 1.2s ease-in-out infinite;
+  }
+  .wakeup-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .wakeup-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dotPulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.2); background: var(--gold); }
+  }
+
+  .wakeup-bar-wrap {
+    width: 220px;
+    height: 2px;
+    background: rgba(201,168,76,0.1);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .wakeup-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
+    border-radius: 1px;
+    box-shadow: 0 0 8px var(--gold);
+    animation: wakeupScan 2s ease-in-out infinite;
+  }
+  @keyframes wakeupScan {
+    0% { width: 0%; margin-left: 0; }
+    50% { width: 70%; }
+    100% { width: 0%; margin-left: 100%; }
+  }
 </style>
 </head>
 <body>
+
+<!-- WAKE-UP SPLASH -->
+<div id="wakeupOverlay">
+  <span class="wakeup-eagle">🦅</span>
+  <div class="wakeup-title">Lead Finder</div>
+  <div class="wakeup-status" id="wakeupStatus">Пробуждение сервера</div>
+  <div class="wakeup-dots">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="wakeup-bar-wrap">
+    <div class="wakeup-bar-fill"></div>
+  </div>
+</div>
 
 <div class="imperial-border-top"></div>
 
@@ -572,6 +726,21 @@
         <input type="password" id="apiKey" placeholder="AIza...">
         <button class="eye-btn" onclick="toggleApiKey()">👁</button>
       </div>
+      <span class="api-hint-link" onclick="toggleApiInstructions()">
+        ✦ Как получить ключ?
+      </span>
+      <div class="api-instructions" id="apiInstructions">
+        <ol>
+          <li>Открой <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> — войди под своим Google аккаунтом</li>
+          <li>Создай новый проект (или выбери существующий) в верхнем меню</li>
+          <li>Перейди в <strong style="color:var(--text)">APIs &amp; Services → Library</strong></li>
+          <li>Найди и включи <strong style="color:var(--text)">Places API</strong> (нажми Enable)</li>
+          <li>Перейди в <strong style="color:var(--text)">APIs &amp; Services → Credentials</strong></li>
+          <li>Нажми <strong style="color:var(--text)">Create Credentials → API Key</strong> — скопируй ключ</li>
+          <li>Добавь биллинг: <strong style="color:var(--text)">Billing → Link billing account</strong> (карта нужна, первые $200 бесплатно — ~5000 поисков)</li>
+        </ol>
+        <div class="note">⚠ Без биллинга API вернёт ошибку OR_BACR2_44</div>
+      </div>
     </div>
 
     <div class="form-group">
@@ -613,6 +782,40 @@
 </footer>
 
 <script>
+  // ── WAKE-UP LOGIC ──
+  (function wakeServer() {
+    const overlay = document.getElementById('wakeupOverlay');
+    const status = document.getElementById('wakeupStatus');
+    let attempts = 0;
+
+    async function ping() {
+      attempts++;
+      if (attempts > 3) status.textContent = 'Сервер просыпается, подождите...';
+
+      try {
+        const r = await fetch('/api/ping', { cache: 'no-store' });
+        if (r.ok) {
+          status.textContent = 'Готов к походу ✦';
+          setTimeout(() => {
+            overlay.classList.add('fade-out');
+            setTimeout(() => overlay.remove(), 800);
+          }, 600);
+          return;
+        }
+      } catch (_) {}
+      setTimeout(ping, 2000);
+    }
+
+    ping();
+  })();
+
+  function toggleApiInstructions() {
+    const el = document.getElementById('apiInstructions');
+    const link = document.querySelector('.api-hint-link');
+    el.classList.toggle('open');
+    link.textContent = el.classList.contains('open') ? '✦ Скрыть инструкцию' : '✦ Как получить ключ?';
+  }
+
   const CATEGORIES = [
     'ресторан', 'салон красоты', 'стоматология',
     'фитнес клуб', 'автосервис', 'магазин',

@@ -103,6 +103,11 @@ def run_search(job_id: str, city: str, country: str, categories: list, api_key: 
         job["progress"] = 0
 
 
+@app.get("/api/ping")
+async def ping():
+    return {"ok": True}
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index():
     html_path = Path(__file__).parent / "templates" / "index.html"
