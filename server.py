@@ -96,8 +96,50 @@ def run_search(job_id: str, city: str, country: str, categories: list, api_key: 
         job["message"] = "Генерируем отчёт..."
         job["progress"] = 95
 
-        from reporter import _is_hot_lead
+        import re as _re
+        from reporter import _is_hot_lead, _get_priority_label, _get_email_subject, _generate_email_body
         hot = [c for c in companies if _is_hot_lead(c)]
+
+        # Собираем карточки лидов для UI
+        leads_data = []
+        for c in hot:
+            site = c.get("site_analysis", {})
+            socials = site.get("socials", {})
+            phone = c.get("phone", "")
+
+            wa = socials.get("whatsapp", "")
+            if not wa and phone:
+                digits = _re.sub(r"[^\d]", "", phone)
+                if digits:
+                    wa = f"https://wa.me/{digits}"
+            elif wa and not wa.startswith("http"):
+                wa = "https://" + wa
+
+            ig = socials.get("instagram", "")
+            if ig and not ig.startswith("http"):
+                ig = "https://" + ig
+
+            tg = socials.get("telegram", "")
+            if tg and not tg.startswith("http"):
+                tg = "https://" + tg
+
+            leads_data.append({
+                "name": c.get("name", ""),
+                "category": c.get("category", ""),
+                "phone": phone,
+                "whatsapp": wa,
+                "instagram": ig,
+                "telegram": tg,
+                "website": c.get("website", ""),
+                "rating": c.get("rating", ""),
+                "reviews": c.get("reviews_count", 0),
+                "priority": _get_priority_label(c),
+                "verdict": site.get("verdict", "Нет сайта"),
+                "email_subject": _get_email_subject(c),
+                "email_body": _generate_email_body(c),
+            })
+
+        job["leads"] = leads_data
 
         filepath = generate_report(companies, country=country)
         job["status"] = "done"

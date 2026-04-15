@@ -590,6 +590,197 @@
     letter-spacing: 1px;
   }
 
+  /* ── LEADS LIST ── */
+  .leads-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 28px 0 16px;
+  }
+  .leads-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .leads-count {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  .leads-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 640px) {
+    .leads-grid { grid-template-columns: 1fr; }
+  }
+
+  .lead-card {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 2px;
+    padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .lead-card:hover {
+    border-color: rgba(201,168,76,0.35);
+  }
+
+  .lead-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .lead-priority {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 3px 8px;
+    border-radius: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .priority-high {
+    background: rgba(139,26,26,0.3);
+    border: 1px solid rgba(139,26,26,0.5);
+    color: #ff9999;
+  }
+  .priority-mid {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold);
+  }
+  .lead-category {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lead-name {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 5px;
+    line-height: 1.4;
+  }
+  .lead-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .lead-contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .contact-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 2px;
+    font-size: 11px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(0,0,0,0.2);
+  }
+  .contact-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201,168,76,0.06);
+  }
+  .contact-btn.wa:hover { border-color: #4caf7d; color: #4caf7d; }
+  .contact-btn.ig:hover { border-color: #c96b9b; color: #c96b9b; }
+  .contact-btn.tg:hover { border-color: #4a9eca; color: #4a9eca; }
+
+  .email-toggle {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 2px;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 7px 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .email-toggle:hover {
+    border-color: rgba(201,168,76,0.3);
+    color: var(--gold);
+  }
+  .email-toggle .arrow {
+    transition: transform 0.2s;
+    font-style: normal;
+  }
+  .email-toggle.open .arrow { transform: rotate(90deg); }
+
+  .email-section {
+    display: none;
+    margin-top: 10px;
+    border-top: 1px solid rgba(201,168,76,0.1);
+    padding-top: 12px;
+  }
+  .email-section.open { display: block; }
+
+  .email-subject-line {
+    font-size: 11px;
+    color: var(--gold-dark);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+  .email-body-text {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    font-family: 'Inter', sans-serif;
+    background: rgba(0,0,0,0.2);
+    padding: 12px;
+    border-radius: 2px;
+    margin-bottom: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .copy-btn {
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.2);
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .copy-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .copy-btn.copied { border-color: #4caf7d; color: #4caf7d; }
+
   /* ── WAKE-UP SPLASH ── */
   #wakeupOverlay {
     position: fixed;
@@ -915,6 +1106,11 @@
     }
   }
 
+  const ICON_DOWNLOAD = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+  const ICON_PHONE   = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.13 1.18 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.45-.45a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`;
+  const ICON_LINK    = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`;
+  const ICON_MAIL    = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+
   function showResults(job, jobId) {
     document.getElementById('resultsArea').innerHTML = `
       <div class="results-grid">
@@ -928,13 +1124,75 @@
         </div>
         <div class="stat-card hot">
           <span class="stat-num">${job.hot_count}</span>
-          <span class="stat-label">Горячих лидов 🔥</span>
+          <span class="stat-label">Горячих лидов</span>
         </div>
       </div>
       <a class="btn-download" href="/api/download/${jobId}" download>
-        📜 &nbsp; Скачать свиток (Excel)
+        ${ICON_DOWNLOAD} &nbsp; Скачать отчёт (Excel)
       </a>
+      ${renderLeads(job.leads || [])}
     `;
+  }
+
+  function renderLeads(leads) {
+    if (!leads.length) return '';
+    const cards = leads.map((l, i) => {
+      const isHigh = l.priority.includes('ВЫСОКИЙ');
+      const prioClass = isHigh ? 'priority-high' : 'priority-mid';
+      const prioText = isHigh ? 'ВЫСОКИЙ' : 'СРЕДНИЙ';
+      const rating = l.rating ? `★ ${l.rating}${l.reviews ? ' · ' + l.reviews + ' отзывов' : ''}  ·  ` : '';
+      const contacts = [
+        l.phone    ? `<a class="contact-btn phone" href="tel:${l.phone}">${ICON_PHONE} ${l.phone}</a>` : '',
+        l.whatsapp ? `<a class="contact-btn wa" href="${l.whatsapp}" target="_blank">WA</a>` : '',
+        l.instagram? `<a class="contact-btn ig" href="${l.instagram}" target="_blank">IG</a>` : '',
+        l.telegram ? `<a class="contact-btn tg" href="${l.telegram}" target="_blank">TG</a>` : '',
+        l.website  ? `<a class="contact-btn" href="${l.website}" target="_blank">${ICON_LINK} Сайт</a>` : '',
+      ].filter(Boolean).join('');
+
+      const emailBody = l.email_body.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `
+        <div class="lead-card">
+          <div class="lead-top">
+            <span class="lead-priority ${prioClass}">${prioText}</span>
+            <span class="lead-category">${l.category}</span>
+          </div>
+          <div class="lead-name">${l.name}</div>
+          <div class="lead-meta">${rating}${l.verdict}</div>
+          <div class="lead-contacts">${contacts || '<span style="font-size:11px;color:var(--text-dim)">Контакты не найдены</span>'}</div>
+          <button class="email-toggle" onclick="toggleEmail(this)">
+            <i class="arrow">▸</i> ${ICON_MAIL} Показать письмо
+          </button>
+          <div class="email-section">
+            <div class="email-subject-line">Тема: ${l.email_subject}</div>
+            <pre class="email-body-text">${emailBody}</pre>
+            <button class="copy-btn" onclick="copyEmail(this, \`${l.email_body.replace(/`/g,"'")}\`)">Копировать</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="leads-header">
+        <span class="leads-title">⚔ Горячие лиды</span>
+        <span class="leads-count">${leads.length} компаний</span>
+      </div>
+      <div class="leads-grid">${cards}</div>`;
+  }
+
+  function toggleEmail(btn) {
+    btn.classList.toggle('open');
+    const section = btn.nextElementSibling;
+    section.classList.toggle('open');
+  }
+
+  function copyEmail(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Скопировано ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Копировать';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
   }
 </script>
 </body>
