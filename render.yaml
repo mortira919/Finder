@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: workwork-lead-finder
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: SEARCH_CITY
+        value: Астана
+      - key: COUNTRY
+        value: KZ
+      - key: SEARCH_CATEGORIES
+        value: "ресторан,салон красоты,стоматология,фитнес клуб,автосервис,магазин,отель,аптека"
+      - key: MAX_RESULTS
+        value: "20"

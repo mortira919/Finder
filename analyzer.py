@@ -111,10 +111,16 @@ def analyze_website(url: str) -> Dict:
         if copyright_match:
             result["copyright_year"] = int(copyright_match.group(1))
 
+        # --- Соцсети ---
+        result["socials"] = _extract_socials(soup, resp.text)
+
         # --- Подсчёт итогового скора ---
         result["score"] = _calculate_score(result)
         result["verdict"] = _get_verdict(result)
         result["opportunity"] = _get_opportunity(result)
+
+        if "socials" not in result:
+            result["socials"] = {}
 
     except requests.exceptions.SSLError:
         result["reachable"] = True
@@ -204,6 +210,41 @@ def _get_opportunity(r: Dict) -> str:
         return "Есть потенциал для улучшения"
     else:
         return "Сайт в порядке"
+
+
+def _extract_socials(soup, raw_html: str) -> Dict:
+    """Ищет ссылки на соцсети на странице компании."""
+    socials = {}
+    raw_lower = raw_html.lower()
+
+    patterns = {
+        "instagram": r'instagram\.com/([A-Za-z0-9_.]{2,30})/?(?:["\'\s]|$)',
+        "vk":        r'vk\.com/([A-Za-z0-9_.]{2,50})/?(?:["\'\s]|$)',
+        "telegram":  r't\.me/([A-Za-z0-9_]{3,32})/?(?:["\'\s]|$)',
+        "youtube":   r'youtube\.com/(?:channel/|@)([A-Za-z0-9_\-]{2,50})',
+        "whatsapp":  r'wa\.me/(\d{10,15})',
+    }
+
+    for platform, pattern in patterns.items():
+        match = re.search(pattern, raw_html, re.IGNORECASE)
+        if match:
+            username = match.group(1)
+            # Фильтруем мусор (общие слова, трекеры)
+            skip = {"share", "sharer", "intent", "p", "feed", "stories",
+                    "explore", "reel", "reels", "accounts", "privacy"}
+            if username.lower() not in skip and len(username) > 2:
+                if platform == "instagram":
+                    socials["instagram"] = f"instagram.com/{username}"
+                elif platform == "vk":
+                    socials["vk"] = f"vk.com/{username}"
+                elif platform == "telegram":
+                    socials["telegram"] = f"t.me/{username}"
+                elif platform == "youtube":
+                    socials["youtube"] = f"youtube.com/@{username}"
+                elif platform == "whatsapp":
+                    socials["whatsapp"] = f"wa.me/{username}"
+
+    return socials
 
 
 def _no_website_result() -> Dict:

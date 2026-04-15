@@ -3,6 +3,7 @@ reporter.py — Генерирует Excel-отчёт и шаблоны холо
 """
 
 import os
+import re
 from datetime import datetime
 from typing import List, Dict, Optional
 from openpyxl import Workbook
@@ -15,46 +16,49 @@ from colorama import Fore, Style
 OUTPUT_DIR = "output"
 
 
-def generate_report(companies: List[Dict]) -> str:
+def generate_report(companies: List[Dict], country: str = "RU") -> str:
     """
     Генерирует Excel-файл с результатами анализа.
-    Возвращает путь к созданному файлу.
+    country="KZ" → делит горячие лиды между 2 менеджерами.
+    country="RU" → один общий лист горячих лидов.
     """
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filepath = os.path.join(OUTPUT_DIR, f"leads_{timestamp}.xlsx")
 
     wb = Workbook()
-
-    # Только горячие лиды — делим пополам между менеджерами
     hot_leads = [c for c in companies if _is_hot_lead(c)]
-    mid = len(hot_leads) // 2
-    manager1_leads = hot_leads[:mid]
-    manager2_leads = hot_leads[mid:]
 
-    for c in manager1_leads:
-        c["manager"] = "Менеджер 1"
-    for c in manager2_leads:
-        c["manager"] = "Менеджер 2"
+    if country == "KZ":
+        # КЗ: делим горячих лидов между 2 менеджерами
+        mid = len(hot_leads) // 2
+        manager1_leads = hot_leads[:mid]
+        manager2_leads = hot_leads[mid:]
 
-    # Лист 1: Все горячие лиды с колонкой менеджера
-    ws_all = wb.active
-    ws_all.title = "Все горячие лиды"
-    _fill_leads_sheet(ws_all, hot_leads, use_manager_field=True)
+        for c in manager1_leads:
+            c["manager"] = "Менеджер 1"
+        for c in manager2_leads:
+            c["manager"] = "Менеджер 2"
 
-    # Лист 2: Менеджер 1
-    ws_m1 = wb.create_sheet("Менеджер 1")
-    _fill_leads_sheet(ws_m1, manager1_leads, manager_name="Менеджер 1")
+        ws_all = wb.active
+        ws_all.title = "Все горячие лиды"
+        _fill_leads_sheet(ws_all, hot_leads, use_manager_field=True)
 
-    # Лист 3: Менеджер 2
-    ws_m2 = wb.create_sheet("Менеджер 2")
-    _fill_leads_sheet(ws_m2, manager2_leads, manager_name="Менеджер 2")
+        ws_m1 = wb.create_sheet("Менеджер 1")
+        _fill_leads_sheet(ws_m1, manager1_leads, manager_name="Менеджер 1")
 
-    # Лист 4: Шаблоны писем
+        ws_m2 = wb.create_sheet("Менеджер 2")
+        _fill_leads_sheet(ws_m2, manager2_leads, manager_name="Менеджер 2")
+    else:
+        # РФ: один лист горячих лидов
+        ws_all = wb.active
+        ws_all.title = "Горячие лиды"
+        _fill_leads_sheet(ws_all, hot_leads)
+
+    # Шаблоны писем + Статистика
     ws_emails = wb.create_sheet("Шаблоны писем")
     _fill_email_templates(ws_emails, hot_leads)
 
-    # Лист 5: Статистика
     ws_stats = wb.create_sheet("Статистика")
     _fill_stats_sheet(ws_stats, companies)
 
@@ -66,8 +70,8 @@ def _fill_leads_sheet(ws, companies: List[Dict], manager_name: str = "", use_man
     """Заполняет лист с лидами."""
     headers = [
         "Менеджер", "Приоритет", "Название", "Категория", "Адрес",
-        "Телефон", "Сайт", "Рейтинг", "Отзывов",
-        "Статус сайта", "Скор сайта (0-100)", "Проблемы",
+        "Телефон", "WhatsApp", "Сайт", "Instagram", "VK", "Telegram",
+        "Рейтинг", "Отзывов", "Статус сайта", "Скор (0-100)",
         "Возможность", "Шаблон письма"
     ]
 
@@ -105,19 +109,30 @@ def _fill_leads_sheet(ws, companies: List[Dict], manager_name: str = "", use_man
         mgr = company.get("manager", manager_name) if use_manager_field else manager_name
         row_fill_color = _get_manager_color(mgr) or _get_row_color(priority)
 
+        socials = site.get("socials", {})
+        phone = company.get("phone", "")
+        wa = socials.get("whatsapp", "")
+        if not wa and phone:
+            digits = re.sub(r"[^\d]", "", phone)
+            if digits:
+                wa = f"wa.me/{digits}"
+
         row_data = [
             mgr,
             priority,
             company.get("name", ""),
             company.get("category", ""),
             company.get("address", ""),
-            company.get("phone", ""),
+            phone,
+            wa,
             company.get("website", ""),
+            socials.get("instagram", ""),
+            socials.get("vk", ""),
+            socials.get("telegram", ""),
             company.get("rating", ""),
             company.get("reviews_count", ""),
             site.get("verdict", ""),
             site.get("score", ""),
-            site.get("opportunity", ""),
             _get_opportunity_summary(company),
             _get_email_subject(company),
         ]
@@ -138,7 +153,7 @@ def _fill_leads_sheet(ws, companies: List[Dict], manager_name: str = "", use_man
         ws.row_dimensions[row_idx].height = 25
 
     # Ширина колонок
-    column_widths = [14, 12, 30, 18, 35, 18, 35, 8, 10, 22, 15, 45, 40, 50]
+    column_widths = [14, 12, 28, 16, 32, 16, 22, 30, 28, 20, 18, 8, 8, 20, 10, 38, 45]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = width
 
@@ -266,57 +281,53 @@ def _get_opportunity_summary(company: Dict) -> str:
 
 def _get_email_subject(company: Dict) -> str:
     name = company.get("name", "")
-    has_app = company.get("app_check", {}).get("has_mobile_app", False)
     has_website = bool(company.get("website"))
     site_score = company.get("site_analysis", {}).get("score", 50)
 
     if not has_website:
-        return f"Сайт для {name} — привлекайте клиентов онлайн"
-    elif not has_app:
         return f"Мобильное приложение для {name} — ваши клиенты уже в смартфонах"
     elif site_score < 45:
-        return f"Обновление сайта {name} — увеличьте конверсию в 2-3 раза"
+        return f"Приложение и новый сайт для {name} — больше клиентов каждый день"
     else:
-        return f"Цифровые решения для {name}"
+        return f"Мобильное приложение для {name} — автоматизируйте продажи"
 
 
 def _generate_email_body(company: Dict) -> str:
     name = company.get("name", "компании")
     category = company.get("category", "бизнеса")
-    has_app = company.get("app_check", {}).get("has_mobile_app", False)
     has_website = bool(company.get("website"))
     site_score = company.get("site_analysis", {}).get("score", 50)
     site_issues = company.get("site_analysis", {}).get("opportunity", "")
 
-    greeting = f"Здравствуйте!\n\nМы изучили {name} и хотим поделиться наблюдением.\n\n"
+    greeting = f"Здравствуйте!\n\nМеня зовут [Имя], я из команды WorkWork Studio — мы разрабатываем мобильные приложения и сайты для бизнеса.\n\n"
 
     if not has_website:
         pain = (
-            f"Ваш {category} пока не представлен в интернете. "
-            f"По нашим данным, 70% клиентов ищут услуги онлайн перед визитом. "
-            f"Вы теряете значительную часть аудитории.\n\n"
-            f"Мы в WorkWork Studio разработаем современный сайт, который:\n"
-            f"• Будет находиться в топе Google и 2ГИС\n"
-            f"• Автоматически принимать заявки 24/7\n"
-            f"• Отображаться идеально на смартфонах\n\n"
+            f"Заметили, что у {name} пока нет ни сайта, ни мобильного приложения. "
+            f"Сегодня 80% клиентов ищут услуги через смартфон — без цифрового присутствия "
+            f"вы теряете их каждый день.\n\n"
+            f"Мы можем разработать для вас:\n"
+            f"• Мобильное приложение (iOS + Android) — онлайн-запись, оплата, уведомления\n"
+            f"• Современный сайт — в топе Google и 2ГИС, заявки 24/7\n"
+            f"• Всё под ключ с гарантией 1 год\n\n"
         )
-    elif not has_app:
+    elif site_score < 45:
         pain = (
-            f"У {name} пока нет мобильного приложения. "
-            f"Сегодня 80% пользователей предпочитают приложения браузеру — "
-            f"это прямые повторные продажи и лояльность.\n\n"
-            f"Мы разработаем приложение для iOS и Android, которое:\n"
-            f"• Увеличит повторные визиты на 40-60%\n"
-            f"• Позволит отправлять push-уведомления об акциях\n"
-            f"• Упростит запись / заказ / оплату для клиентов\n\n"
+            f"Сайт {name} есть, но он устарел — {site_issues}. "
+            f"Клиенты уходят ещё до того, как позвонили.\n\n"
+            f"Мы предлагаем:\n"
+            f"• Мобильное приложение (iOS + Android) — повторные продажи и лояльность\n"
+            f"• Обновление сайта — скорость, адаптивность, конверсия\n"
+            f"• Push-уведомления, онлайн-запись, оплата прямо в приложении\n\n"
         )
     else:
         pain = (
-            f"Мы проанализировали сайт {name} и нашли точки роста: {site_issues}.\n\n"
-            f"Обновлённый сайт поможет:\n"
-            f"• Увеличить конверсию посетителей в клиентов\n"
-            f"• Улучшить позиции в поиске Google\n"
-            f"• Работать быстро на мобильных устройствах\n\n"
+            f"У {name} хороший сайт — но мобильного приложения нет. "
+            f"80% ваших клиентов сидят в смартфонах и предпочитают приложения браузеру.\n\n"
+            f"Приложение от WorkWork Studio даст вам:\n"
+            f"• Повторные визиты +40% через push-уведомления\n"
+            f"• Онлайн-запись и оплату прямо в приложении\n"
+            f"• Программу лояльности и личный кабинет клиента\n\n"
         )
 
     cta = (

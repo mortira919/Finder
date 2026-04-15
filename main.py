@@ -19,7 +19,6 @@ from tqdm import tqdm
 
 from finder import find_companies
 from analyzer import analyze_website
-from app_checker import check_mobile_apps
 from reporter import generate_report
 from emailer import run_email_campaign
 
@@ -44,7 +43,6 @@ def parse_args():
     parser.add_argument("--city", default=None, help="Город поиска (например: Алматы)")
     parser.add_argument("--categories", default=None, help="Категории через запятую")
     parser.add_argument("--demo", action="store_true", help="Запустить с демо-данными")
-    parser.add_argument("--no-app-check", action="store_true", help="Пропустить проверку приложений")
     parser.add_argument("--send-emails", action="store_true", help="Отправить письма найденным компаниям")
     parser.add_argument("--dry-run", action="store_true", help="Тест рассылки без реальной отправки")
     return parser.parse_args()
@@ -73,12 +71,14 @@ def main():
 
     print(f"{Fore.WHITE}Город:      {Fore.YELLOW}{city}")
     print(f"{Fore.WHITE}Категории:  {Fore.YELLOW}{', '.join(categories)}")
+    country = os.getenv("COUNTRY", "RU")
     print(f"{Fore.WHITE}Режим:      {Fore.YELLOW}{'ДЕМО (без API)' if not os.getenv('GOOGLE_MAPS_API_KEY') else 'Google Maps API'}")
+    print(f"{Fore.WHITE}Страна:     {Fore.YELLOW}{'Казахстан (2 менеджера)' if country == 'KZ' else 'Россия (1 менеджер)'}")
     print()
 
     # ─── Шаг 1: Поиск компаний ───────────────────────────────────────────────
     print(f"{Fore.CYAN}{'─'*54}")
-    print(f"{Fore.CYAN}[1/3] Поиск компаний через Google Maps...{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}[1/2] Поиск компаний через Google Maps...{Style.RESET_ALL}")
     companies = find_companies(categories)
 
     if not companies:
@@ -89,7 +89,7 @@ def main():
 
     # ─── Шаг 2: Анализ сайтов ────────────────────────────────────────────────
     print(f"{Fore.CYAN}{'─'*54}")
-    print(f"{Fore.CYAN}[2/3] Анализ сайтов...{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}[2/2] Анализ сайтов...{Style.RESET_ALL}")
 
     with_website = [c for c in companies if c.get("website")]
     without_website = [c for c in companies if not c.get("website")]
@@ -106,30 +106,20 @@ def main():
     print(f"{Fore.GREEN}✓ Анализ сайтов завершён{Style.RESET_ALL}\n")
 
     # ─── Шаг 3: Проверка мобильных приложений ────────────────────────────────
-    print(f"{Fore.CYAN}{'─'*54}")
-    print(f"{Fore.CYAN}[3/3] Проверка мобильных приложений...{Style.RESET_ALL}")
+    # Приложения не проверяем — предлагаем и сайт и приложение всем у кого нет сайта
+    for company in companies:
+        company["app_check"] = {
+            "has_mobile_app": False,
+            "app_status": "Не проверялось",
+            "ios_app": False, "android_app": False,
+            "ios_link": "", "android_link": ""
+        }
 
-    if args.no_app_check:
-        print(f"  {Fore.YELLOW}Пропущено (флаг --no-app-check){Style.RESET_ALL}")
-        for company in companies:
-            company["app_check"] = {
-                "has_mobile_app": False,
-                "app_status": "Не проверялось",
-                "ios_app": False, "android_app": False,
-                "ios_link": "", "android_link": ""
-            }
-    else:
-        for company in tqdm(companies, desc="  Проверка", unit="компания", ncols=60):
-            company["app_check"] = check_mobile_apps(company["name"])
-            time.sleep(0.2)
-
-    print(f"{Fore.GREEN}✓ Проверка приложений завершена{Style.RESET_ALL}\n")
-
-    # ─── Шаг 4: Генерация отчёта ─────────────────────────────────────────────
+    # ─── Шаг 3: Генерация отчёта ─────────────────────────────────────────────
     print(f"{Fore.CYAN}{'─'*54}")
     print(f"{Fore.CYAN}Генерация Excel-отчёта...{Style.RESET_ALL}")
 
-    report_path = generate_report(companies)
+    report_path = generate_report(companies, country=country)
 
     # ─── Итоги ───────────────────────────────────────────────────────────────
     hot_leads = [c for c in companies if _is_hot(c)]
