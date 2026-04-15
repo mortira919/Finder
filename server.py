@@ -11,9 +11,9 @@ import time
 from typing import Dict, Optional
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
+import io
+from fastapi import FastAPI, Request, UploadFile, File
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from database import init_db, save_search, get_history, get_filepath_by_job
@@ -216,6 +216,70 @@ async def get_status(job_id: str):
     if not job:
         return {"status": "not_found"}
     return job
+
+
+@app.post("/api/import")
+async def import_excel(file: UploadFile = File(...)):
+    """Парсит загруженный Excel-файл и возвращает список лидов."""
+    from openpyxl import load_workbook
+
+    content = await file.read()
+    try:
+        wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+    except Exception as e:
+        return JSONResponse({"error": f"Не удалось открыть файл: {e}"}, status_code=400)
+
+    # Ищем листы с лидами в порядке приоритета
+    preferred = ["Все горячие лиды", "Горячие лиды", "Менеджер 1", "Менеджер 2"]
+    ws = next((wb[n] for n in preferred if n in wb.sheetnames), wb.active)
+
+    leads = []
+    headers = None
+
+    for row in ws.iter_rows(values_only=True):
+        if headers is None:
+            headers = [str(c).strip() if c else "" for c in row]
+            continue
+        if not any(row):
+            continue
+
+        def g(col):
+            try:
+                return str(row[headers.index(col)] or "").strip()
+            except (ValueError, IndexError):
+                return ""
+
+        phone = g("Телефон")
+        wa    = g("WhatsApp")
+        ig    = g("Instagram")
+        tg    = g("Telegram")
+
+        # Приводим к полным URL
+        if wa and not wa.startswith("http"): wa = "https://" + wa
+        if ig and not ig.startswith("http"): ig = "https://" + ig
+        if tg and not tg.startswith("http"): tg = "https://" + tg
+
+        name = g("Название")
+        if not name:
+            continue
+
+        leads.append({
+            "name":          name,
+            "category":      g("Категория"),
+            "phone":         phone,
+            "whatsapp":      wa,
+            "instagram":     ig,
+            "telegram":      tg,
+            "website":       g("Сайт"),
+            "rating":        g("Рейтинг"),
+            "reviews":       g("Отзывов"),
+            "priority":      g("Приоритет") or "📋 НИЗКИЙ",
+            "verdict":       g("Статус сайта"),
+            "email_subject": g("Шаблон письма"),
+            "email_body":    "",
+        })
+
+    return {"leads": leads, "total": len(leads), "sheet": ws.title}
 
 
 @app.get("/api/history")

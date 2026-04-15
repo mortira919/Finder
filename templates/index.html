@@ -186,7 +186,37 @@
 
   @media (max-width: 600px) {
     .form-grid { grid-template-columns: 1fr; }
-    .panel { padding: 24px; }
+    .panel { padding: 20px; }
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 480px) {
+    header { padding: 28px 16px 20px; }
+    .eagle { font-size: 36px; }
+    h1 { font-size: 26px; }
+    .header-desc { font-size: 11px; }
+    .container { padding: 0 12px 60px; }
+    .panel { padding: 16px; }
+
+    /* История */
+    .history-item { flex-wrap: wrap; gap: 8px; }
+    .history-actions { flex-direction: row; width: 100%; }
+    .h-btn { flex: 1; text-align: center; }
+
+    /* Лиды */
+    .lead-contacts { gap: 4px; }
+    .contact-btn { padding: 5px 8px; font-size: 10px; }
+    .stat-num { font-size: 28px; }
+
+    /* Прогресс */
+    .progress-message { font-size: 11px; }
+
+    /* Категории */
+    .cat-tag { padding: 5px 10px; font-size: 11px; }
+
+    /* Кнопки */
+    .btn-imperial { font-size: 11px; letter-spacing: 3px; padding: 15px; }
+    .btn-download { font-size: 11px; letter-spacing: 2px; }
   }
 
   .form-group {
@@ -721,6 +751,70 @@
     .history-stats { display: none; }
   }
 
+  /* ── IMPORT ── */
+  .import-zone {
+    border: 1px dashed rgba(201,168,76,0.3);
+    border-radius: 2px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .import-zone:hover, .import-zone.drag-over {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.04);
+  }
+  .import-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .import-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    opacity: 0.6;
+  }
+  .import-label {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .import-hint {
+    font-size: 11px;
+    color: rgba(201,168,76,0.35);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+  }
+  .import-filename {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--gold);
+    font-family: 'Inter', sans-serif;
+    display: none;
+  }
+  .import-results {
+    margin-top: 20px;
+  }
+  .import-error {
+    color: #ff6666;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 12px;
+    border: 1px solid rgba(255,100,100,0.2);
+    border-radius: 2px;
+    background: rgba(139,26,26,0.1);
+    margin-top: 12px;
+    display: none;
+  }
+
   /* ── LEADS LIST ── */
   .leads-header {
     display: flex;
@@ -1084,6 +1178,20 @@
     <div id="historyList"><div class="history-empty">Загрузка...</div></div>
   </div>
 
+  <!-- ИМПОРТ -->
+  <div class="panel" style="margin-bottom:24px">
+    <div class="panel-title">⬆ Импорт файла</div>
+    <div class="import-zone" id="importZone">
+      <input type="file" accept=".xlsx,.xls" id="importInput" onchange="handleImport(this)">
+      <div class="import-icon">📂</div>
+      <div class="import-label">Перетащите Excel-файл или нажмите</div>
+      <div class="import-hint">leads_*.xlsx — скачанный из этого сервиса</div>
+      <div class="import-filename" id="importFilename"></div>
+    </div>
+    <div class="import-error" id="importError"></div>
+    <div class="import-results" id="importResults"></div>
+  </div>
+
   <!-- ПРОГРЕСС -->
   <div class="panel progress-panel" id="progressPanel">
     <div class="panel-title">⏳ Ход операции</div>
@@ -1275,41 +1383,46 @@
     `;
   }
 
+  function buildLeadCard(l) {
+    const isHigh = l.priority && l.priority.includes('ВЫСОКИЙ');
+    const prioClass = isHigh ? 'priority-high' : 'priority-mid';
+    const prioText  = isHigh ? 'ВЫСОКИЙ' : 'СРЕДНИЙ';
+    const rating = l.rating ? `★ ${l.rating}${l.reviews ? ' · ' + l.reviews + ' отзывов' : ''}  ·  ` : '';
+    const contacts = [
+      l.phone    ? `<a class="contact-btn phone" href="tel:${l.phone}">${ICON_PHONE} ${l.phone}</a>` : '',
+      l.whatsapp ? `<a class="contact-btn wa" href="${l.whatsapp}" target="_blank">WA</a>` : '',
+      l.instagram? `<a class="contact-btn ig" href="${l.instagram}" target="_blank">IG</a>` : '',
+      l.telegram ? `<a class="contact-btn tg" href="${l.telegram}" target="_blank">TG</a>` : '',
+      l.website  ? `<a class="contact-btn" href="${l.website}" target="_blank">${ICON_LINK} Сайт</a>` : '',
+    ].filter(Boolean).join('');
+
+    const emailBody = (l.email_body || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const emailSection = l.email_subject ? `
+      <button class="email-toggle" onclick="toggleEmail(this)">
+        <i class="arrow">▸</i> ${ICON_MAIL} Показать письмо
+      </button>
+      <div class="email-section">
+        <div class="email-subject-line">Тема: ${l.email_subject}</div>
+        ${emailBody ? `<pre class="email-body-text">${emailBody}</pre>
+        <button class="copy-btn" onclick="copyEmail(this, \`${(l.email_body||'').replace(/`/g,"'")}\`)">Копировать</button>` : ''}
+      </div>` : '';
+
+    return `
+      <div class="lead-card">
+        <div class="lead-top">
+          <span class="lead-priority ${prioClass}">${prioText}</span>
+          <span class="lead-category">${l.category}</span>
+        </div>
+        <div class="lead-name">${l.name}</div>
+        <div class="lead-meta">${rating}${l.verdict}</div>
+        <div class="lead-contacts">${contacts || '<span style="font-size:11px;color:var(--text-dim)">Контакты не найдены</span>'}</div>
+        ${emailSection}
+      </div>`;
+  }
+
   function renderLeads(leads) {
     if (!leads.length) return '';
-    const cards = leads.map((l, i) => {
-      const isHigh = l.priority.includes('ВЫСОКИЙ');
-      const prioClass = isHigh ? 'priority-high' : 'priority-mid';
-      const prioText = isHigh ? 'ВЫСОКИЙ' : 'СРЕДНИЙ';
-      const rating = l.rating ? `★ ${l.rating}${l.reviews ? ' · ' + l.reviews + ' отзывов' : ''}  ·  ` : '';
-      const contacts = [
-        l.phone    ? `<a class="contact-btn phone" href="tel:${l.phone}">${ICON_PHONE} ${l.phone}</a>` : '',
-        l.whatsapp ? `<a class="contact-btn wa" href="${l.whatsapp}" target="_blank">WA</a>` : '',
-        l.instagram? `<a class="contact-btn ig" href="${l.instagram}" target="_blank">IG</a>` : '',
-        l.telegram ? `<a class="contact-btn tg" href="${l.telegram}" target="_blank">TG</a>` : '',
-        l.website  ? `<a class="contact-btn" href="${l.website}" target="_blank">${ICON_LINK} Сайт</a>` : '',
-      ].filter(Boolean).join('');
-
-      const emailBody = l.email_body.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return `
-        <div class="lead-card">
-          <div class="lead-top">
-            <span class="lead-priority ${prioClass}">${prioText}</span>
-            <span class="lead-category">${l.category}</span>
-          </div>
-          <div class="lead-name">${l.name}</div>
-          <div class="lead-meta">${rating}${l.verdict}</div>
-          <div class="lead-contacts">${contacts || '<span style="font-size:11px;color:var(--text-dim)">Контакты не найдены</span>'}</div>
-          <button class="email-toggle" onclick="toggleEmail(this)">
-            <i class="arrow">▸</i> ${ICON_MAIL} Показать письмо
-          </button>
-          <div class="email-section">
-            <div class="email-subject-line">Тема: ${l.email_subject}</div>
-            <pre class="email-body-text">${emailBody}</pre>
-            <button class="copy-btn" onclick="copyEmail(this, \`${l.email_body.replace(/`/g,"'")}\`)">Копировать</button>
-          </div>
-        </div>`;
-    }).join('');
+    const cards = leads.map(l => buildLeadCard(l)).join('');
 
     return `
       <div class="leads-header">
@@ -1323,6 +1436,63 @@
     btn.classList.toggle('open');
     const section = btn.nextElementSibling;
     section.classList.toggle('open');
+  }
+
+  // ── IMPORT ──
+  const importZone = document.getElementById('importZone');
+  importZone.addEventListener('dragover', e => { e.preventDefault(); importZone.classList.add('drag-over'); });
+  importZone.addEventListener('dragleave', () => importZone.classList.remove('drag-over'));
+  importZone.addEventListener('drop', e => {
+    e.preventDefault();
+    importZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadImport(file);
+  });
+
+  async function handleImport(input) {
+    if (input.files[0]) uploadImport(input.files[0]);
+  }
+
+  async function uploadImport(file) {
+    const errEl  = document.getElementById('importError');
+    const resEl  = document.getElementById('importResults');
+    const nameEl = document.getElementById('importFilename');
+
+    errEl.style.display = 'none';
+    resEl.innerHTML = '<div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:2px;color:var(--text-dim);padding:12px 0"><span class="spinner"></span> Читаем файл...</div>';
+    nameEl.style.display = 'block';
+    nameEl.textContent = file.name;
+
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      const r = await fetch('/api/import', { method: 'POST', body: form });
+      const data = await r.json();
+
+      if (data.error) {
+        errEl.textContent = data.error;
+        errEl.style.display = 'block';
+        resEl.innerHTML = '';
+        return;
+      }
+
+      if (!data.leads.length) {
+        resEl.innerHTML = '<div class="history-empty">Лиды не найдены в файле</div>';
+        return;
+      }
+
+      resEl.innerHTML = `
+        <div class="leads-header">
+          <span class="leads-title">⚔ Импортировано из «${data.sheet}»</span>
+          <span class="leads-count">${data.leads.length} компаний</span>
+        </div>
+        <div class="leads-grid">${data.leads.map(l => buildLeadCard(l)).join('')}</div>`;
+    } catch(e) {
+      errEl.textContent = 'Ошибка загрузки файла';
+      errEl.style.display = 'block';
+      resEl.innerHTML = '';
+    }
   }
 
   // ── HISTORY ──
