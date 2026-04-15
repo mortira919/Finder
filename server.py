@@ -113,6 +113,9 @@ def run_search(job_id: str, city: str, country: str, categories: list, api_key: 
             if not wa and phone:
                 digits = _re.sub(r"[^\d]", "", phone)
                 if digits:
+                    # Convert local RU/KZ format (8XXXXXXXXXX) to international (+7XXXXXXXXXX)
+                    if digits.startswith("8") and len(digits) == 11:
+                        digits = "7" + digits[1:]
                     wa = f"https://wa.me/{digits}"
             elif wa and not wa.startswith("http"):
                 wa = "https://" + wa

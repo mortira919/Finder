@@ -115,6 +115,9 @@ def _fill_leads_sheet(ws, companies: List[Dict], manager_name: str = "", use_man
         if not wa and phone:
             digits = re.sub(r"[^\d]", "", phone)
             if digits:
+                # Convert local RU/KZ format (8XXXXXXXXXX) to international (+7XXXXXXXXXX)
+                if digits.startswith("8") and len(digits) == 11:
+                    digits = "7" + digits[1:]
                 wa = f"wa.me/{digits}"
 
         row_data = [
